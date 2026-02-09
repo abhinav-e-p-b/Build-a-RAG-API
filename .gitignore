@@ -16,3 +16,6 @@ db/
 #OS
 .DS_Store
 Thumbs.db
+*.pub
+#Logslogs/
+*.log
