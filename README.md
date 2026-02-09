@@ -1,555 +1,776 @@
-<img src="https://cdn.prod.website-files.com/677c400686e724409a5a7409/6790ad949cf622dc8dcd9fe4_nextwork-logo-leather.svg" alt="NextWork" width="300" />
+# RAG API with FastAPI and Docker
 
-# Build and Containerize a RAG API with FastAPI and Docker
+A production-ready Retrieval-Augmented Generation (RAG) system built with FastAPI, ChromaDB, and Ollama. This project demonstrates how to build, containerize, and deploy an AI-powered API that combines information retrieval with large language models.
 
-**Author:** Abhinave P.B  
-**Email:** abhinavepb12@gmail.com
+[![CI Pipeline](https://github.com/yourusername/rag-api/workflows/RAG%20CI%20Pipeline/badge.svg)](https://github.com/yourusername/rag-api/actions)
 
----
+## 📋 Table of Contents
 
-## Table of Contents
-- [Project Overview](#project-overview)
-- [Part 1: Building the RAG API](#part-1-building-the-rag-api)
-  - [Setting Up Python and Ollama](#setting-up-python-and-ollama)
-  - [Setting Up a Python Workspace](#setting-up-a-python-workspace)
-  - [Setting Up a Knowledge Base](#setting-up-a-knowledge-base)
-  - [Building the RAG API](#building-the-rag-api)
-  - [Testing the RAG API](#testing-the-rag-api)
-  - [Adding Dynamic Content](#adding-dynamic-content)
-- [Part 2: Containerizing with Docker](#part-2-containerizing-with-docker)
-  - [Installing Docker Desktop](#installing-docker-desktop)
-  - [Creating the Dockerfile](#creating-the-dockerfile)
-  - [Building and Running the Container](#building-and-running-the-container)
-  - [Pushing to Docker Hub](#pushing-to-docker-hub)
-- [Key Takeaways](#key-takeaways)
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Documentation](#api-documentation)
+- [Docker Deployment](#docker-deployment)
+- [Kubernetes Deployment](#kubernetes-deployment)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Project Structure](#project-structure)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
----
+## 🎯 Overview
 
-## Project Overview
+This project implements a Retrieval-Augmented Generation (RAG) system that:
+- Accepts natural language queries through REST API endpoints
+- Retrieves relevant information from a vector database (ChromaDB)
+- Generates accurate, context-aware responses using a local LLM (TinyLlama via Ollama)
+- Supports dynamic knowledge base updates
+- Runs consistently across environments through Docker containerization
 
-This comprehensive project demonstrates how to design, build, and containerize a Retrieval-Augmented Generation (RAG) system using FastAPI and Docker. The API allows users to submit natural language questions, retrieves the most relevant information from a custom document knowledge base stored in Chroma, and generates accurate, context-aware responses using Ollama.
+### What is RAG?
 
-### What I Built
+RAG combines the power of information retrieval with generative AI. Instead of relying solely on a language model's training data, RAG:
+1. Retrieves relevant documents from a knowledge base
+2. Provides this context to the language model
+3. Generates responses grounded in the retrieved information
 
-A production-ready RAG API that:
-- Accepts natural language queries through REST endpoints
-- Retrieves relevant information from a vector database
-- Generates context-aware responses using a local LLM
-- Supports dynamic content addition to the knowledge base
-- Runs consistently across any environment through Docker containerization
+This approach reduces hallucinations and enables the model to answer questions about domain-specific information.
 
-### Why This Project
+## ✨ Features
 
-I undertook this project to learn how modern AI systems combine information retrieval with large language models, and how to expose such systems through real-world APIs. Through this journey, I gained hands-on experience with vector databases, embeddings, FastAPI backend development, integrating local LLMs, and containerization with Docker.
+- **RESTful API**: FastAPI-based endpoints for querying and adding knowledge
+- **Vector Search**: ChromaDB for efficient semantic similarity search
+- **Local LLM**: Ollama integration with TinyLlama for text generation
+- **Dynamic Updates**: Real-time knowledge base expansion via API
+- **Containerized**: Docker support for consistent deployment
+- **Kubernetes Ready**: K8s manifests for orchestrated deployment
+- **CI/CD Pipeline**: Automated testing and quality checks with GitHub Actions
+- **Interactive Docs**: Auto-generated Swagger UI documentation
+- **Mock Mode**: Testing support without requiring Ollama
 
-### Technologies Used
+## 🏗️ Architecture
 
-**Core Services:**
-- Python - Backend programming language
-- FastAPI - Modern, high-performance web framework for building APIs
-- ChromaDB - Vector database for storing and retrieving embeddings
-- Ollama - Platform for running LLMs locally
-- TinyLlama - Lightweight language model for text generation
-- Uvicorn - ASGI server for serving the FastAPI application
-- Docker - Containerization platform
-- Docker Hub - Cloud-based registry for Docker images
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────┐
+│         FastAPI Application         │
+│  ┌───────────┐      ┌────────────┐ │
+│  │  /query   │      │   /add     │ │
+│  └─────┬─────┘      └─────┬──────┘ │
+└────────┼──────────────────┼─────────┘
+         │                  │
+         ▼                  ▼
+┌─────────────────────────────────────┐
+│         ChromaDB (Vector DB)        │
+│    ┌──────────────────────────┐    │
+│    │  Embedded Documents       │    │
+│    │  (Semantic Vectors)       │    │
+│    └──────────────────────────┘    │
+└─────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│      Ollama (LLM Runtime)           │
+│    ┌──────────────────────────┐    │
+│    │     TinyLlama Model       │    │
+│    └──────────────────────────┘    │
+└─────────────────────────────────────┘
+```
 
-**Key Concepts:**
-- API development and REST endpoints
-- Retrieval-Augmented Generation (RAG)
-- Vector embeddings and semantic search
-- Virtual environment and dependency management
-- Containerization and cross-environment consistency
-- Interactive API documentation with Swagger UI
-- Versioning and distribution via Docker Hub
+### How It Works
 
-### Project Timeline
+1. **Query Processing**: User sends a question to `/query` endpoint
+2. **Embedding Generation**: Query is converted to a vector embedding
+3. **Semantic Search**: ChromaDB finds most relevant documents
+4. **Context Retrieval**: Top matching documents are extracted
+5. **LLM Generation**: Ollama generates response using retrieved context
+6. **Response**: Formatted answer returned to user
 
-**Part 1 (FastAPI Development):** ~2 hours  
-**Part 2 (Docker Containerization):** ~2 hours  
-**Total:** ~4 hours
+## 📦 Prerequisites
 
----
+- **Python 3.10+**
+- **Docker** (for containerization)
+- **Ollama** (for local LLM inference)
+- **Minikube/kubectl** (optional, for Kubernetes deployment)
 
-## Part 1: Building the RAG API
+## 🚀 Quick Start
 
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_g3h4i5j6)
+### Option 1: Local Development
 
-### Setting Up Python and Ollama
-
-In this step, I set up the foundational tools required for the project. Python is a popular high-level programming language widely used for backend development and API creation. Ollama is an open-source platform that allows large language models (LLMs) to run locally on a device.
-
-#### Python and Ollama Setup
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_i9j0k1l2)
-
-#### Why Ollama and TinyLlama?
-
-Ollama is a local LLM runtime that allows developers to easily download, manage, and run large language models on their own machines without relying on cloud-based services.
-
-I downloaded the TinyLlama model because it is:
-- Lightweight and resource-efficient
-- Can run smoothly on systems with limited computational power
-- Provides reasonable natural language understanding and generation capabilities
-
-The model helps my RAG API by:
-- Generating accurate, context-aware responses using retrieved information
-- Improving response relevance
-- Reducing hallucinations
-- Enabling faster, cost-effective local inference
-
----
-
-### Setting Up a Python Workspace
-
-This step involves creating a proper Python development environment with isolated dependencies.
-
-#### Creating a Virtual Environment
-
-A virtual environment is an isolated Python workspace that allows a project to use its own set of libraries and dependencies without affecting other Python projects on the same system.
-
-**Why I created one:**
-- Avoid dependency conflicts
-- Ensure consistent package versions
-- Maintain a clean and stable development environment
-- All packages are limited to this project only
-
-**To create a virtual environment:**
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/rag-api.git
+cd rag-api
+
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Download and run Ollama with TinyLlama
+ollama pull tinyllama
+
+# Generate embeddings from knowledge base
+python embed_docs.py
+
+# Start the API server
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### Installing Dependencies
+Access the API at `http://localhost:8000` and interactive docs at `http://localhost:8000/docs`
 
-The packages I installed are FastAPI, Chroma, Uvicorn, and Ollama.
-
-**FastAPI** - Used for building the backend API of the application, allowing fast, efficient handling of HTTP requests and responses for the RAG system.
-
-**Chroma** - Used as a vector database to store and retrieve embeddings, enabling efficient similarity search over documents for retrieval-augmented generation.
-
-**Uvicorn** - Used as an ASGI server to run and serve the FastAPI application with high performance.
-
-**Ollama** - Used to run large language models locally, which generate natural language responses based on the retrieved context in the RAG pipeline.
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_u1v2w3x4)
+### Option 2: Docker
 
 ```bash
-pip install fastapi chromadb uvicorn ollama
+# Build the Docker image
+docker build -t rag-app:latest .
+
+# Run the container
+docker run -p 8000:8000 rag-app:latest
 ```
 
----
-
-### Setting Up a Knowledge Base
-
-In this step, I created a knowledge base that stores all the documents and information my RAG system uses to answer user queries.
-
-#### What is a Knowledge Base?
-
-A knowledge base is a structured collection of text data (such as notes, documents, or FAQs) that can be processed, indexed, and searched by an AI model.
-
-**Why it's needed:**
-The RAG API retrieves relevant information from this knowledge base and provides accurate, context-aware answers instead of relying only on the model's general knowledge.
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_t1u2v3w4)
-
-#### Understanding Embeddings
-
-**What are embeddings?**
-Embeddings are numerical vector representations of text that capture the semantic meaning of the content, allowing the AI to understand and compare text based on meaning rather than exact words.
-
-**How I created them:**
-- Processed knowledge base content using an embedding model
-- Converted each text chunk into vectors
-- Stored them in the `db/` folder
-
-**Why embeddings are important for RAG:**
-- Enable fast similarity search
-- Allow efficient retrieval of relevant information
-- Help the system find semantically similar content
-- Provide context to the language model for generating accurate responses
-
----
-
-### Building the RAG API
-
-In this step, I built the core RAG API that connects user queries with the knowledge base and language model.
-
-#### What is FastAPI?
-
-FastAPI is a modern, high-performance Python web framework used to build APIs quickly and efficiently, with automatic documentation and async support.
-
-**Why I'm using it:**
-The RAG API acts as the backend service that receives user queries, retrieves relevant information from the knowledge base, and generates accurate answers using the language model.
-
-#### How the RAG API Works
-
-My RAG API works by combining information retrieval with text generation:
-
-1. User sends a question to the API
-2. API converts the query into an embedding
-3. Embedding is compared with stored embeddings in the vector database
-4. Most relevant documents are retrieved from the knowledge base
-5. Retrieved content is passed as context to the language model
-6. Model generates a clear and relevant response
-
-**Main Components:**
-
-- **Knowledge Base** - Stores the source documents with domain-specific information
-- **Embedding Model** - Converts both documents and user queries into vector representations
-- **Vector Database (Chroma / db folder)** - Stores embeddings and enables fast similarity search
-- **Retriever** - Finds the most relevant documents based on query embedding
-- **Language Model (Ollama / TinyLlama)** - Generates the final response using retrieved context
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_f3g4h5i6)
-
----
-
-### Testing the RAG API
-
-Testing is crucial to verify that the API works correctly and returns accurate responses.
-
-#### Testing with Swagger UI
-
-Swagger UI is an interactive web-based interface automatically generated by FastAPI that allows developers to:
-- View API endpoints
-- Send sample requests
-- Inspect responses directly from the browser
-- Test without writing client-side code
-
-#### Testing with curl
-
-I also tested the API using curl commands:
+### Option 3: Docker Hub
 
 ```bash
-curl -X POST "http://localhost:8000/query" -H "Content-Type: application/json" -d '{"question":"Your question here"}'
+# Pull pre-built image
+docker pull abhinavepb/rag-app:latest
+
+# Run the container
+docker run -p 8000:8000 abhinavepb/rag-app:latest
 ```
 
-**Understanding the command:**
-- Uses the POST method to send data to the server
-- Server processes the data and returns a response
-- Confirms the endpoint is working correctly
+## 💻 Installation
 
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_g3h4i5j6)
-
-#### Benefits of Swagger UI
-
-The best part about using Swagger UI:
-- Provides real-time API testing
-- Shows clear request and response formats
-- Makes debugging and verification easy
-- No need to write additional test code
-
----
-
-### Adding Dynamic Content
-
-In this extension, I added functionality to dynamically update the knowledge base in real-time.
-
-#### The /add Endpoint
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-api_w9x0y1z2)
-
-The `/add` endpoint allows me to submit new content directly to the knowledge base via an API.
-
-**Why this is useful:**
-- Updates the system in real time
-- No manual file editing required
-- No server restart needed
-- Mimics production API behavior
-- Enables continuous knowledge base expansion
-
-**How it works:**
-1. Send a POST request with new content
-2. Content is processed and converted to embeddings
-3. Embeddings are stored in the vector database
-4. Content immediately becomes searchable
-5. Future queries can retrieve this new information
-
----
-
-## Part 2: Containerizing with Docker
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_x7y8z9a0)
-
-### Installing Docker Desktop
-
-#### What is Docker Desktop?
-
-Docker Desktop is a tool that allows me to run and manage Docker containers on my system, providing a consistent and isolated development environment.
-
-**Why I installed it:**
-- Ensures consistent environment across different machines
-- Avoids compatibility and setup issues
-- Simplifies dependency management
-- Eliminates "it works on my machine" problems
-
-#### Benefits of Containerization
-
-Containerization helps my project by:
-- Ensuring consistency across development, testing, and production
-- Simplifying dependency management
-- Making the application easier to test and scale
-- Enabling easy deployment
-- Packaging everything needed to run the application
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_i9j0k1l2)
-
-#### Verifying Docker Installation
-
-I verified Docker is working by running the hello-world container:
+### Step 1: Clone Repository
 
 ```bash
-docker run hello-world
+git clone https://github.com/yourusername/rag-api.git
+cd rag-api
 ```
 
-This proves that:
-- Docker is correctly installed
-- The Docker daemon is running
-- Images can be pulled from Docker Hub
-- Containers can be created and executed successfully
+### Step 2: Set Up Python Environment
 
----
+```bash
+# Create virtual environment
+python -m venv venv
 
-### Creating the Dockerfile
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate
+```
 
-#### What is a Dockerfile?
+### Step 3: Install Dependencies
 
-A Dockerfile is a text file that contains a set of instructions used by Docker to build a Docker image.
+```bash
+pip install -r requirements.txt
+```
 
-#### Key Dockerfile Instructions
+**Core Dependencies:**
+- `fastapi` - Web framework for building APIs
+- `uvicorn` - ASGI server for running FastAPI
+- `chromadb` - Vector database for embeddings
+- `ollama` - Python client for Ollama LLM
+- `requests` - HTTP library for testing
 
-**FROM** - Tells Docker to use a specific base image as the starting point
+### Step 4: Install Ollama
 
-**COPY** - Copies files and folders from the host machine into the Docker image
+**macOS:**
+```bash
+brew install ollama
+```
 
-**RUN** - Executes commands during the image build process (installing packages, dependencies, etc.)
+**Linux:**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
 
-**CMD** - Defines the default command that runs when a container starts from the image
+**Windows:**
+Download from [ollama.com](https://ollama.com/download)
 
-#### Project Structure for Containerization
+### Step 5: Pull TinyLlama Model
 
-Files created:
-- `main.py` - Defines the API endpoints
-- `rag.py` - Implements the retrieval and generation logic
-- `requirements.txt` - Manages dependencies
-- `Dockerfile` - Containerizes the API for consistent deployment
+```bash
+ollama pull tinyllama
+```
 
----
+### Step 6: Prepare Knowledge Base
 
-### Building and Running the Container
+Add your documents to the `docs/` folder:
 
-#### Building the Docker Image
+```bash
+mkdir -p docs
+echo "Your knowledge content here" > docs/example.txt
+```
 
-Building a Docker image involves:
-1. Writing a Dockerfile that defines the base environment
-2. Installing all required dependencies
-3. Copying the application code
-4. Executing necessary setup steps
-5. Packaging everything into a single image
+### Step 7: Generate Embeddings
+
+```bash
+python embed_docs.py
+```
+
+This creates the `db/` folder with ChromaDB embeddings.
+
+## 🔧 Usage
+
+### Starting the Server
+
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+### API Endpoints
+
+#### 1. Query Endpoint
+
+**POST** `/query`
+
+Query the knowledge base and get AI-generated responses.
+
+```bash
+curl -X POST "http://localhost:8000/query?q=What%20is%20Kubernetes?" \
+  -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+{
+  "answer": "Kubernetes is a container platform used to manage containers at scale..."
+}
+```
+
+#### 2. Add Knowledge Endpoint
+
+**POST** `/add`
+
+Dynamically add new content to the knowledge base.
+
+```bash
+curl -X POST "http://localhost:8000/add?text=Docker%20is%20a%20containerization%20platform" \
+  -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+### Using Swagger UI
+
+1. Navigate to `http://localhost:8000/docs`
+2. Click on an endpoint to expand
+3. Click "Try it out"
+4. Enter your parameters
+5. Click "Execute"
+6. View the response below
+
+## 📚 API Documentation
+
+### Interactive Documentation
+
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+### Request/Response Examples
+
+#### Query Request
+
+```json
+POST /query?q=What+is+Kubernetes
+Content-Type: application/json
+```
+
+#### Query Response
+
+```json
+{
+  "answer": "Kubernetes is a container platform used to manage containers at scale. It provides orchestration, scaling, and deployment capabilities for containerized applications."
+}
+```
+
+#### Add Knowledge Request
+
+```json
+POST /add?text=FastAPI+is+a+modern+web+framework
+Content-Type: application/json
+```
+
+#### Add Knowledge Response
+
+```json
+{
+  "status": "success",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+## 🐳 Docker Deployment
+
+### Building the Image
 
 ```bash
 docker build -t rag-app:latest .
 ```
 
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_p9q0r1s2)
-
-#### Verifying the Build
-
-I verified my Docker image was built successfully by:
-```bash
-docker images
-```
-
-This confirms that:
-- The `rag-app:latest` image appeared with a valid image ID and size
-- The entire application, its dependencies, and precomputed embeddings are packaged
-- The image can run consistently on any system using Docker
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_x7y8z9a0)
-
-#### Running the Containerized API
+### Running the Container
 
 ```bash
 docker run -p 8000:8000 rag-app:latest
 ```
 
-#### Testing Results
+### Using Docker Compose (Optional)
 
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_o1p2q3r4)
+Create `docker-compose.yml`:
 
-Testing the containerized API revealed:
+```yaml
+version: '3.8'
+services:
+  rag-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    volumes:
+      - ./db:/app/db
+```
 
-**What worked:**
-- FastAPI application runs consistently with all dependencies packaged
-- Reproducible across environments
-
-**Challenges discovered:**
-- Host-specific services (like Ollama) not directly reachable from inside the container
-- Container isolation requires `host.docker.internal` to reach host services
-
-**Key differences between local and Docker:**
-
-| Local Execution | Docker Container |
-|----------------|------------------|
-| Direct localhost access | Isolated environment |
-| Depends on system setup | Self-contained |
-| Manual dependency management | All dependencies packaged |
-| Environment-specific issues | Consistent across systems |
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_c9d0e1f2)
-
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_v5w6x7y8)
-
----
+Run with:
+```bash
+docker-compose up
+```
 
 ### Pushing to Docker Hub
 
-#### What is Docker Hub?
-
-Docker Hub is a cloud-based registry where you can store and share Docker images.
-
-#### Pushing to Docker Hub
-
-Steps I followed:
-1. Tagged my local Docker image with my Docker Hub repository name
-2. Used `docker push` to upload it
-
 ```bash
-docker tag rag-app:latest username/rag-app:latest
-docker push username/rag-app:latest
+# Tag the image
+docker tag rag-app:latest yourusername/rag-app:latest
+
+# Login to Docker Hub
+docker login
+
+# Push the image
+docker push yourusername/rag-app:latest
 ```
 
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_m5n6o7p8)
+## ☸️ Kubernetes Deployment
 
-#### Why Docker Hub is Useful
+### Prerequisites
 
-Advantages of pushing to a registry:
-- Easy distribution of images
-- Ensures consistency across environments
-- Supports versioning
-- Allows teams or deployment pipelines to pull and run the exact same image anywhere
-- Central, cloud-based storage
-- Facilitates collaboration
+- Minikube installed and running
+- kubectl configured
 
-#### Pulling from Docker Hub
+### Quick Deploy Script
 
-![Image](http://learn.nextwork.org/ecstatic_white_trusty_gecko/uploads/ai-devops-docker_f5g6h7i8)
-
-Pulling an image means downloading a pre-built Docker image from Docker Hub to your local machine:
+Use the provided quick-fix script for automated deployment:
 
 ```bash
-docker pull username/rag-app:latest
+chmod +x quick-fix.sh
+./quick-fix.sh
 ```
 
-**Difference between building and pulling:**
+### Manual Deployment
 
-| Building Locally | Pulling from Docker Hub |
-|-----------------|------------------------|
-| Creates new image from Dockerfile | Downloads pre-built image |
-| Done on your machine | Fetched from cloud registry |
-| Requires source code | Only needs image name |
-| Takes time to build | Quick download |
+#### Step 1: Start Minikube
+
+```bash
+minikube start
+```
+
+#### Step 2: Configure Docker Environment
+
+```bash
+eval $(minikube docker-env)
+```
+
+#### Step 3: Build Image in Minikube
+
+```bash
+docker build -t rag-app:latest .
+```
+
+#### Step 4: Deploy to Kubernetes
+
+```bash
+# Apply deployment
+kubectl apply -f deployment-fixed.yaml
+
+# Apply service
+kubectl apply -f service.yaml
+```
+
+#### Step 5: Verify Deployment
+
+```bash
+# Check pods
+kubectl get pods -l app=rag-app
+
+# Check service
+kubectl get service rag-app-service
+
+# Get service URL
+minikube service rag-app-service --url
+```
+
+#### Step 6: Test the Deployment
+
+```bash
+SERVICE_URL=$(minikube service rag-app-service --url)
+curl -X POST "$SERVICE_URL/query?q=What%20is%20Kubernetes?"
+```
+
+### Kubernetes Resources
+
+The project includes:
+- **deployment.yaml**: Defines the pod deployment
+- **deployment-fixed.yaml**: Corrected deployment with proper image pull policy
+- **service.yaml**: NodePort service for external access
+
+### Troubleshooting K8s Deployment
+
+**Pod not starting:**
+```bash
+kubectl describe pod -l app=rag-app
+kubectl logs -l app=rag-app
+```
+
+**Image pull errors:**
+- Ensure `imagePullPolicy: Never` is set
+- Rebuild image in minikube's Docker daemon
+
+**Service not accessible:**
+```bash
+minikube service rag-app-service --url
+```
+
+## 🔄 CI/CD Pipeline
+
+The project includes three GitHub Actions workflows:
+
+### 1. RAG CI Pipeline (`.github/workflows/ci.yml`)
+
+Triggers on changes to:
+- `docs/**` (knowledge base files)
+- `app.py` (API code)
+- `embed_docs.py` (embedding script)
+
+**Pipeline Steps:**
+1. Checkout code
+2. Set up Python 3.11
+3. Install dependencies
+4. Rebuild embeddings from docs
+5. Start API in mock mode (no Ollama required)
+6. Run semantic tests
+7. Validate RAG quality
+
+### 2. Python Application Pipeline (`.github/workflows/python-app.yml`)
+
+Standard Python testing workflow:
+- Linting with flake8
+- Testing with pytest
+- Runs on push/PR to main branch
+
+### 3. Issue Summarization (`.github/workflows/summary.yml`)
+
+Uses GitHub's AI inference action to:
+- Automatically summarize new issues
+- Post summary as a comment
+
+### Running Tests Locally
+
+```bash
+# With mock LLM (no Ollama needed)
+USE_MOCK_LLM=1 uvicorn app:app --host 0.0.0.0 --port 8000 &
+python semantic_test.py
+
+# With real Ollama
+uvicorn app:app --reload &
+python semantic_test.py
+```
+
+## 📁 Project Structure
+
+```
+rag-api/
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                 # RAG CI pipeline
+│       ├── python-app.yml         # Python linting/testing
+│       └── summary.yml            # Issue summarization
+│
+├── docs/                          # Knowledge base documents
+│   └── k8s.txt                    # Example document
+│
+├── db/                            # ChromaDB vector database (generated)
+│
+├── app.py                         # Main FastAPI application
+├── embed_docs.py                  # Embedding generation script
+├── embed.py                       # Legacy embedding script
+├── semantic_test.py               # Semantic quality tests
+│
+├── deployment.yaml                # Kubernetes deployment manifest
+├── deployment-fixed.yaml          # Fixed K8s deployment
+├── service.yaml                   # Kubernetes service manifest
+├── quick-fix.sh                   # K8s deployment automation script
+│
+├── Dockerfile                     # Docker image definition
+├── requirements.txt               # Python dependencies
+├── .gitignore                     # Git ignore rules
+└── README.md                      # This file
+```
+
+### Key Files Explained
+
+- **app.py**: FastAPI application with `/query` and `/add` endpoints
+- **embed_docs.py**: Processes all `.txt` files in `docs/` and creates embeddings
+- **semantic_test.py**: Validates RAG responses contain expected keywords
+- **Dockerfile**: Multi-stage build for containerizing the application
+- **deployment-fixed.yaml**: Kubernetes deployment with correct image settings
+- **quick-fix.sh**: Automated Kubernetes deployment script with error handling
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+- `OLLAMA_HOST`: Ollama server URL (default: `http://127.0.0.1:11434`)
+- `USE_MOCK_LLM`: Set to `1` to enable mock mode for testing without Ollama
+
+### Mock Mode for Testing
+
+The application supports a mock mode for CI/CD testing:
+
+```bash
+USE_MOCK_LLM=1 uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+In mock mode:
+- No Ollama connection required
+- Returns retrieved context directly as the answer
+- Useful for testing retrieval without LLM inference
+
+### Docker Configuration
+
+For containers to access Ollama running on the host:
+
+```yaml
+env:
+  - name: OLLAMA_HOST
+    value: "http://host.docker.internal:11434"
+```
+
+## 🧪 Testing
+
+### Semantic Tests
+
+The `semantic_test.py` file validates that responses contain expected keywords:
+
+```python
+def test_kubernetes_query():
+    response = requests.post("http://127.0.0.1:8000/query?q=What is Kubernetes?")
+    answer = response.json()["answer"]
+    assert "container" in answer.lower()
+```
+
+### Running Tests
+
+```bash
+# Start the server first
+uvicorn app:app --reload &
+
+# Run tests
+python semantic_test.py
+```
+
+### Expected Output
+
+```
+✅ Kubernetes query test passed
+✅ NextWork query test passed
+All semantic tests passed!
+```
+
+### Adding New Tests
+
+1. Add new document to `docs/` folder
+2. Run `python embed_docs.py`
+3. Add test function to `semantic_test.py`
+4. Define expected keywords for validation
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### 1. Ollama Connection Error
+
+**Problem:** `ConnectionError: Failed to connect to Ollama`
+
+**Solution:**
+```bash
+# Check if Ollama is running
+ollama list
+
+# Start Ollama service
+ollama serve
+
+# Verify TinyLlama model is available
+ollama pull tinyllama
+```
+
+#### 2. Empty Database
+
+**Problem:** No results returned from queries
+
+**Solution:**
+```bash
+# Regenerate embeddings
+python embed_docs.py
+
+# Verify database exists
+ls -la db/
+```
+
+#### 3. Docker Image Not Found in Kubernetes
+
+**Problem:** `ImagePullBackOff` or `ErrImagePull`
+
+**Solution:**
+```bash
+# Use minikube's Docker daemon
+eval $(minikube docker-env)
+
+# Rebuild image
+docker build -t rag-app:latest .
+
+# Verify image exists
+docker images | grep rag-app
+
+# Use deployment-fixed.yaml with imagePullPolicy: Never
+kubectl apply -f deployment-fixed.yaml
+```
+
+#### 4. Port Already in Use
+
+**Problem:** `Address already in use: 8000`
+
+**Solution:**
+```bash
+# Find process using port 8000
+lsof -i :8000
+
+# Kill the process
+kill -9 <PID>
+
+# Or use a different port
+uvicorn app:app --port 8001
+```
+
+#### 5. Module Not Found Error
+
+**Problem:** `ModuleNotFoundError: No module named 'chromadb'`
+
+**Solution:**
+```bash
+# Ensure virtual environment is activated
+source venv/bin/activate
+
+# Reinstall dependencies
+pip install -r requirements.txt
+```
+
+### Debug Mode
+
+Enable debug logging:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow PEP 8 style guidelines
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
+
+### Running Linters
+
+```bash
+# Install flake8
+pip install flake8
+
+# Run linter
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+```
+
+## 📝 Future Enhancements
+
+- [ ] Authentication and authorization
+- [ ] Rate limiting for API endpoints
+- [ ] Caching layer for frequent queries
+- [ ] Support for multiple LLM models
+- [ ] Advanced embedding models (e.g., sentence-transformers)
+- [ ] Monitoring and observability (Prometheus, Grafana)
+- [ ] Horizontal pod autoscaling in Kubernetes
+- [ ] Document chunking for large files
+- [ ] Multi-language support
+- [ ] Query history and analytics
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👤 Author
+
+**Abhinave P.B**
+- Email: abhinavepb12@gmail.com
+- GitHub: [@yourusername](https://github.com/yourusername)
+
+## 🙏 Acknowledgments
+
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
+- [ChromaDB](https://www.trychroma.com/) - Vector database
+- [Ollama](https://ollama.com/) - Local LLM runtime
+- [Docker](https://www.docker.com/) - Containerization platform
+- [Kubernetes](https://kubernetes.io/) - Container orchestration
+
+## 📚 Resources
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [ChromaDB Documentation](https://docs.trychroma.com/)
+- [Ollama Documentation](https://github.com/ollama/ollama)
+- [RAG Concepts](https://www.pinecone.io/learn/retrieval-augmented-generation/)
+- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
+- [Kubernetes Documentation](https://kubernetes.io/docs/home/)
 
 ---
 
-## Key Takeaways
-
-### What I Learned
-
-**Technical Skills:**
-- Building production-ready REST APIs with FastAPI
-- Implementing Retrieval-Augmented Generation (RAG) systems
-- Working with vector databases and embeddings
-- Running local LLMs with Ollama
-- Containerizing applications with Docker
-- Publishing and distributing Docker images
-
-**Best Practices:**
-- Importance of virtual environments for dependency isolation
-- Benefits of containerization for consistency
-- Value of interactive API documentation
-- Real-time knowledge base updates
-- Cross-platform deployment strategies
-
-### Challenges Faced
-
-**Most Challenging Part (Part 1):** Understanding the basics of RAG systems and how embeddings work
-
-**Most Challenging Part (Part 2):** Docker build process and container networking
-
-### Most Rewarding Moments
-
-**Part 1:** Building a hands-on FastAPI project and seeing the RAG system generate accurate responses
-
-**Part 2:** Seeing the final containerized application run consistently across different environments
-
-### Project Goals Achievement
-
-✅ Learned about RAG systems and how they work  
-✅ Built a functional FastAPI application  
-✅ Implemented vector database for semantic search  
-✅ Integrated local LLM for text generation  
-✅ Created dynamic knowledge base functionality  
-✅ Containerized the application with Docker  
-✅ Successfully pushed to Docker Hub  
-✅ Understood the benefits of containerization  
-
-**Did it meet my goals?** Yes! This project certainly met all my learning goals and provided valuable hands-on experience with modern AI and DevOps technologies.
-
----
-
-## Running the Project
-
-### Local Development
-
-1. Clone the repository
-2. Create and activate virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Start Ollama and pull TinyLlama model
-5. Run the application:
-   ```bash
-   uvicorn main:app --reload
-   ```
-6. Access Swagger UI at `http://localhost:8000/docs`
-
-### Using Docker
-
-1. Pull the image from Docker Hub:
-   ```bash
-   docker pull username/rag-app:latest
-   ```
-2. Run the container:
-   ```bash
-   docker run -p 8000:8000 rag-app:latest
-   ```
-3. Access the API at `http://localhost:8000`
-
----
-
-## Future Enhancements
-
-- Add authentication and authorization
-- Implement caching for faster responses
-- Support multiple LLM models
-- Add monitoring and logging
-- Deploy to cloud platforms
-- Implement API rate limiting
-- Add comprehensive test suite
-
----
-
-**Project Links:**
-- Part 1: [Build a RAG API with FastAPI](http://learn.nextwork.org/projects/ai-devops-api)
-- Part 2: [Containerize a RAG API with Docker](http://learn.nextwork.org/projects/ai-devops-docker)
-
----
-
-*This project was completed as part of learning modern AI development and DevOps practices.*
+**Built with ❤️ using FastAPI, ChromaDB, and Ollama**
