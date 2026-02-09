@@ -6,7 +6,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: rag-api
+      app: rag-app
   template:
     metadata:
       labels:
